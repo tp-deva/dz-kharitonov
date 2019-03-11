@@ -27,25 +27,34 @@ void error_worker(int res) {
 
 int read_line(char **str) {
     size_t size = ARRAY_SIZE;
-    if (!(*str = (char *)malloc(size * sizeof(char)))) {
+    char *res_str;
+
+    *str = (char *)malloc(size * sizeof(char));
+    if (!(*str)) {
         return MEMORY_ALLOCATION_ERROR;
     }
+
     char *ptr = NULL, *str_ptr = *str;
     int reading_size = ARRAY_SIZE;
 
     while (fgets(str_ptr, reading_size, stdin)) {
+
         if ((ptr = strchr(str_ptr, '\n'))) {
-            //if (!(*str = (char *)realloc(*str, (size_t)(ptr - *str + 1) * sizeof(char)))) {
-            //    return MEMORY_ALLOCATION_ERROR;
-            //}
-            // valgrind is reporting error
+            res_str = (char *)realloc(*str, (size_t)(ptr - *str + 1) * sizeof(char));
+
+            if (!(*res_str)) {
+                return MEMORY_ALLOCATION_ERROR;
+            }
+
             return 1;
         }
 
         size += ARRAY_SIZE;
-        if (!(*str = (char *)realloc(*str, size * sizeof(char)))) {
+        res_str = (char *)realloc(*str, size * sizeof(char));
+        if (!(res_str)) {
             return MEMORY_ALLOCATION_ERROR;
         }
+        *str = res_str;
 
         str_ptr = *str + size - ARRAY_SIZE - 1;
         reading_size = ARRAY_SIZE + 1;
@@ -63,18 +72,25 @@ int read_line(char **str) {
         *str = NULL;
         return 0;
     }
-    if (!(*str = (char *)realloc(*str, (ptr - *str + 1) * sizeof(char)))) {
+
+    res_str = (char *)realloc(*str, (ptr - *str + 1) * sizeof(char));
+    if (!(res_str)) {
         return MEMORY_ALLOCATION_ERROR;
     }
+    *str = res_str;
 
     return 0;
 }
 
 int read_lines(char ***str, size_t *number_of_lines) {
     size_t i = 0, str_size = ARRAY_SIZE;
-    if (!(*str = (char **)malloc(str_size * sizeof(char *)))) {
+    char **res_str;
+
+    *str = (char **)malloc(str_size * sizeof(char *));
+    if (!(*str)) {
         return MEMORY_ALLOCATION_ERROR;
     }
+
     int read_line_res = 1;
 
     while((read_line_res = read_line(&((*str)[i++])))) {
@@ -85,9 +101,12 @@ int read_lines(char ***str, size_t *number_of_lines) {
 
         if (i == str_size) {
             str_size += ARRAY_SIZE;
-            if (!(*str = (char **)realloc(*str, str_size * sizeof(char *)))) {
+
+            res_str = (char **)realloc(*str, str_size * sizeof(char *));
+            if (!(res_str)) {
                 return MEMORY_ALLOCATION_ERROR;
             }
+            *str = res_str;
         }
     }
 
@@ -95,9 +114,11 @@ int read_lines(char ***str, size_t *number_of_lines) {
         i--;
     }
 
-    if (!(*str = (char **)realloc(*str, i * sizeof(char *)))) {
+    res_str = (char **)realloc(*str, i * sizeof(char *));
+    if (!(res_str)) {
         return MEMORY_ALLOCATION_ERROR;
     }
+    *str = res_str;
 
     *number_of_lines = i;
 
@@ -125,21 +146,23 @@ int freeing_array_memory(char **str, size_t *number_of_lines) {
 }
 
 int check_parentheses(const char *str) {
-    size_t left = 0, right = 0, i = 0;
+    size_t count = 0, i = 0;
 
     while(str[i]) {
         if(str[i] == '(') {
-            left++;
+            count++;
         } else if (str[i] == ')') {
-            right++;
+            count--;
         }
-        if (right > left) {
+
+        if (count < 0) {
             return 0;
         }
+
         i++;
     }
 
-    if (left == right) {
+    if (!count) {
         return 1;
     }
     return 0;
@@ -148,7 +171,7 @@ int check_parentheses(const char *str) {
 int parse_parentheses(char **str, const size_t num_lines_str, char ***new_str) {
 
     size_t new_str_size = ARRAY_SIZE;
-    char *ptr = NULL;
+    char *ptr = NULL, **res_str = NULL;
     size_t num_lines_new_str = 0;
 
     if (!(*new_str = (char **)malloc(new_str_size * sizeof(char *)))) {
@@ -172,18 +195,24 @@ int parse_parentheses(char **str, const size_t num_lines_str, char ***new_str) {
             }
             if ((num_lines_new_str - 1) == new_str_size) {
                 new_str_size += ARRAY_SIZE;
-                if (!(*new_str = (char **)realloc(*new_str, new_str_size * sizeof(char *)))) {
+
+                res_str = (char **)realloc(*new_str, new_str_size * sizeof(char *));
+                if (!(res_str)) {
                     freeing_array_memory(*new_str, &num_lines_new_str);
                     return MEMORY_ALLOCATION_ERROR;
                 }
+                *new_str = res_str;
             }
             num_lines_new_str++;
         }
     }
 
-    if (!(*new_str = (char **)realloc(*new_str, num_lines_new_str * sizeof(char *)))) {
+
+    res_str = (char **)realloc(*new_str, num_lines_new_str * sizeof(char *));
+    if (!(res_str)) {
         return MEMORY_ALLOCATION_ERROR;
     }
+    *new_str = res_str;
 
     return (int)num_lines_new_str;
 }
